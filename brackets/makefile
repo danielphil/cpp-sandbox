@@ -13,14 +13,10 @@ OBJECTS=$(SOURCES:.cpp=.o)
 %.o: %.cpp
 	$(CC) $(CFLAGS) $< -o $@
 
-test: $(OBJECTS) ../googletest-release-1.8.0/googletest/make/gtest_main.a
+$(EXECUTABLE): $(OBJECTS) ../googletest-release-1.8.0/googletest/make/gtest_main.a
 	$(CC) $(LDFLAGS) $^ -o $@
 
-#$(EXECUTABLE): $(OBJECTS)
-#	$(CC) $(LDFLAGS) $^ -o $@
+run: $(EXECUTABLE)
+	./$(EXECUTABLE)
 
 all: $(OBJECTS) $(EXECUTABLE)
-
-#-include $(OBJECTS:.o=.d)
-
-
