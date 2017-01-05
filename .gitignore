@@ -8,3 +8,10 @@ googletest-release-1.8.0/googletest/make/sample1_unittest.o
 *.d
 *.o
 test
+*.pyc
+caesar-cipher/11-0.txt
+caesar-cipher/1342-0.txt
+caesar-cipher/encrypted.txt
+caesar-cipher/pg1661.txt
+caesar-cipher/results.json
+caesar-cipher/test.txt

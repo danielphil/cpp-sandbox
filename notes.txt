@@ -1,0 +1,3 @@
+For Xcode debugging, see here: http://hiltmon.com/blog/2013/07/05/xcode-and-the-simple-c-plus-plus-project-structure/
+
+Remember to change makefile flags from -O3 to -g -O0!
