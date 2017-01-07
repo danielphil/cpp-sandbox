@@ -1,6 +1,7 @@
 #include <iostream>
 #include <queue>
 #include <stack>
+#include <algorithm>
 #include "gtest/gtest.h"
 
 template <typename T>
@@ -62,41 +63,23 @@ void mergesort_no_recursion(std::vector<T>& items_to_sort) {
 
     auto Length = [] (Range r) { return r.second - r.first + 1; };
 
-    std::queue<Range> to_process;
-    std::stack<Range> to_merge;
+    for (int step = 1; step <= items_to_sort.size(); step *= 2) {
+        for (int block = 0; block * step * 2 < items_to_sort.size(); block++) {
+            int left_start = block * step * 2;
+            int left_end = (left_start + step) - 1;
+            if (left_end >= items_to_sort.size() - 1) {
+                // No right block, so we can't merge here
+                continue;
+            }
 
-    to_process.push(Range(0, items_to_sort.size() - 1));
+            int right_start = left_end + 1;
+            int right_end = (right_start + step) - 1;
+            right_end = std::min(right_end, int(items_to_sort.size() - 1));
 
-    while (!to_process.empty()) {
-        Range current_range = to_process.front();
-        to_process.pop();
-
-        int left_range_length = Length(current_range) / 2;
-        int right_range_length = (Length(current_range) + 1) / 2;
-
-        Range left_range(current_range.first, current_range.first + left_range_length - 1);
-        to_merge.push(left_range);
-
-        Range right_range(left_range.second + 1, left_range.second + 1 + right_range_length - 1);
-        to_merge.push(right_range);
-
-        if (Length(left_range) > 1) {
-            to_process.push(left_range);
+            Range left_range(left_start, left_end);
+            Range right_range(right_start, right_end);
+            merge(items_to_sort, left_range.first, Length(left_range), right_range.first, Length(right_range));
         }
-
-        if (Length(right_range) > 1) {
-            to_process.push(right_range);
-        }
-    }
-
-    while (!to_merge.empty()) {
-        Range b = to_merge.top();
-        to_merge.pop();
-
-        Range a = to_merge.top();
-        to_merge.pop();
-        
-        merge(items_to_sort, a.first, Length(a), b.first, Length(b));
     }
 }
 
@@ -148,13 +131,6 @@ TEST(MergeSortNoRecursion, CheckEmpty) {
 }
 
 TEST(MergeSortNoRecursion, SortEven) {
-    {
-        typedef std::pair<int, int> Range;
-        std::queue<Range> to_process;
-        to_process.push(Range(10, 20));
-        to_process.pop();
-    }
-    
     std::vector<int> items = { 6, 2, -100, 464 };
     mergesort_no_recursion(items);
     EXPECT_EQ(-100, items[0]);
