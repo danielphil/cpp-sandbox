@@ -1,5 +1,6 @@
 #include <iostream>
 #include <queue>
+#include <unordered_set>
 #include "gtest/gtest.h"
 
 class IGraph
@@ -115,7 +116,9 @@ private:
 
 void bfs(
     IGraph* graph,
-    const std::function<void (int, int)>& process_edge
+    const std::function<void (int, int)>& process_edge,
+    const std::function<void (int)>& process_vertex,
+    int start_vertex = 0
 ) {
     enum class VertexState
     {
@@ -134,13 +137,14 @@ void bfs(
     std::vector<int> parents(vertex_count, -1);
 
     std::queue<int> to_process;
-    to_process.push(0);
-    state[0] = VertexState::Discovered;
+    to_process.push(start_vertex);
+    state[start_vertex] = VertexState::Discovered;
 
     while (!to_process.empty()) {
         const auto vertex = to_process.front();
         to_process.pop();
         state[vertex] = VertexState::Processed;
+        process_vertex(vertex);
 
         const auto edges = graph->GetEdgesForVertex(vertex);
         for (auto edge : edges) {
@@ -154,6 +158,26 @@ void bfs(
             }
         }
     }
+}
+
+std::vector<std::vector<int>> connected_components(IGraph* graph) {
+    std::unordered_set<int> to_process;
+    for (auto i = 0; i < graph->GetVertexCount(); i++) {
+        to_process.insert(i);
+    }
+
+    std::vector<std::vector<int>> found_components;
+    while (!to_process.empty()) {
+        std::vector<int> current_component;
+        auto process_vertex = [&] (int edge) {
+            to_process.erase(edge);
+            current_component.push_back(edge);
+        };
+        bfs(graph, [] (int, int) {}, process_vertex, *(to_process.begin()));
+        found_components.push_back(current_component);
+    }
+
+    return found_components;
 }
 
 template <typename T>
@@ -206,9 +230,20 @@ TYPED_TEST(GraphTest, TestBFS) {
     std::vector<std::pair<int, int>> edges;
     bfs(&graph, [&] (int from, int to) {
         edges.push_back(std::make_pair(from, to));
-    });
+    }, [] (int) {});
 
     EXPECT_EQ(2, edges.size());
     EXPECT_EQ(std::make_pair(0, 4), edges[0]);
     EXPECT_EQ(std::make_pair(0, 4), edges[0]);
+}
+
+TYPED_TEST(GraphTest, TestConnectedComponents) {
+    TypeParam graph(5);
+    graph.AddEdge(0, 4, false);
+    graph.AddEdge(2, 3, false);
+
+    auto components = connected_components(&graph);
+    EXPECT_EQ((std::vector<int> { 4, 0 }), components[0]);
+    EXPECT_EQ((std::vector<int> { 3, 2 }), components[1]);
+    EXPECT_EQ((std::vector<int> { 1 }), components[2]);
 }
