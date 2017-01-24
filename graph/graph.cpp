@@ -160,6 +160,52 @@ void bfs(
     }
 }
 
+bool is_bipartite(IGraph* g) {
+    std::unordered_set<int> to_process;
+    for (auto i = 0; i < g->GetVertexCount(); i++) {
+        to_process.insert(i);
+    }
+
+    enum class VertexColor {
+        Uncoloured,
+        White,
+        Black
+    };
+    auto complement = [] (VertexColor c) {
+        switch (c) {
+        case VertexColor::White:
+            return VertexColor::Black;
+        case VertexColor::Black:
+            return VertexColor::White;
+        default:
+            return VertexColor::Uncoloured;
+        }
+    };
+
+    std::vector<VertexColor> colours(g->GetVertexCount(), VertexColor::Uncoloured);
+
+    bool bipartite = true;
+    while (!to_process.empty()) {
+        colours[*(to_process.begin())] = VertexColor::White;
+
+        auto process_vertex = [&] (int vertex) {
+            to_process.erase(vertex);
+        };
+
+        auto process_edge = [&] (int start, int end) {
+            if (colours[start] == colours[end]) {
+                bipartite = false;
+                return;
+            }
+
+            colours[end] = complement(colours[start]);
+        };
+        bfs(g, process_edge, process_vertex, *(to_process.begin()));
+    }
+
+    return bipartite;
+}
+
 std::vector<std::vector<int>> connected_components(IGraph* graph) {
     std::unordered_set<int> to_process;
     for (auto i = 0; i < graph->GetVertexCount(); i++) {
@@ -246,4 +292,21 @@ TYPED_TEST(GraphTest, TestConnectedComponents) {
     EXPECT_EQ((std::vector<int> { 4, 0 }), components[0]);
     EXPECT_EQ((std::vector<int> { 3, 2 }), components[1]);
     EXPECT_EQ((std::vector<int> { 1 }), components[2]);
+}
+
+TYPED_TEST(GraphTest, TestBipartite) {
+    TypeParam graph(5);
+    graph.AddEdge(0, 4, false);
+    graph.AddEdge(2, 3, false);
+
+    EXPECT_TRUE(is_bipartite(&graph));
+}
+
+TYPED_TEST(GraphTest, TestNotBipartite) {
+    TypeParam graph(3);
+    graph.AddEdge(0, 1, false);
+    graph.AddEdge(0, 2, false);
+    graph.AddEdge(1, 2, false);
+
+    EXPECT_FALSE(is_bipartite(&graph));
 }
