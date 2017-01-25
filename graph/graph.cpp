@@ -114,19 +114,19 @@ private:
     std::vector<std::vector<Edge>> m_lists;
 };
 
+enum class VertexState
+{
+    Undiscovered,
+    Discovered,
+    Processed
+};
+
 void bfs(
     IGraph* graph,
     const std::function<void (int, int)>& process_edge,
     const std::function<void (int)>& process_vertex,
     int start_vertex = 0
 ) {
-    enum class VertexState
-    {
-        Undiscovered,
-        Discovered,
-        Processed
-    };
-
     // initialise the tables of processed and unprocessed vertices
     const auto vertex_count = graph->GetVertexCount();
     if (vertex_count <= 0) {
@@ -158,6 +158,58 @@ void bfs(
             }
         }
     }
+}
+
+void dfs_internal(
+    IGraph* graph,
+    std::vector<VertexState>& vertex_states,
+    std::vector<int>& parents,
+    int start_vertex,
+    const std::function<void (int)>& process_vertex,
+    const std::function<void (int, int)>& process_edge
+) {
+    if (vertex_states[start_vertex] == VertexState::Processed) {
+        return;
+    }
+
+    vertex_states[start_vertex] = VertexState::Discovered;
+
+    auto edges = graph->GetEdgesForVertex(start_vertex);
+    std::sort(edges.begin(), edges.end());
+
+    for (auto edge : edges) {
+        if (parents[edge] == start_vertex) {
+            continue;
+        }
+
+        switch (vertex_states[edge]) {
+        case VertexState::Undiscovered:
+            parents[start_vertex] = edge;
+            process_edge(start_vertex, edge);
+            dfs_internal(graph, vertex_states, parents, edge, process_vertex, process_edge);
+            break;
+        case VertexState::Discovered:
+            process_edge(start_vertex, edge);
+            break;
+        case VertexState::Processed:
+            // deliberately don't do anything here
+            break;
+        }
+    }
+
+    process_vertex(start_vertex);
+    vertex_states[start_vertex] = VertexState::Processed;
+}
+
+void dfs(
+    IGraph* graph,
+    const std::function<void (int)>& process_vertex,
+    const std::function<void (int, int)>& process_edge,
+    int start_vertex = 0
+) {
+    std::vector<int> parents(graph->GetVertexCount(), -1);
+    std::vector<VertexState> vertex_states(graph->GetVertexCount(), VertexState::Undiscovered);
+    dfs_internal(graph, vertex_states, parents, start_vertex, process_vertex, process_edge);
 }
 
 bool is_bipartite(IGraph* g) {
@@ -309,4 +361,26 @@ TYPED_TEST(GraphTest, TestNotBipartite) {
     graph.AddEdge(1, 2, false);
 
     EXPECT_FALSE(is_bipartite(&graph));
+}
+
+TYPED_TEST(GraphTest, TestDFS) {
+    TypeParam graph(5);
+    graph.AddEdge(0, 4, false);
+    graph.AddEdge(0, 3, false);
+    graph.AddEdge(3, 4, false);
+
+    std::vector<int> vertices;
+    std::vector<std::pair<int, int>> edges;
+    dfs(
+        &graph,
+        [&] (int vertex) { vertices.push_back(vertex); },
+        [&] (int from, int to) { edges.push_back(std::make_pair(from, to)); }
+    );
+
+    EXPECT_EQ(3, vertices.size());
+    EXPECT_EQ(3, edges.size());
+    EXPECT_EQ(std::vector<int>({ 4, 3, 0 }), vertices);
+    EXPECT_EQ(std::make_pair(0, 3), edges[0]);
+    EXPECT_EQ(std::make_pair(3, 4), edges[1]);
+    EXPECT_EQ(std::make_pair(4, 0), edges[2]);
 }

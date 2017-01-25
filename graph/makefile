@@ -1,5 +1,5 @@
 CC=clang++
-CFLAGS=-c -Weverything -MMD -MP -std=c++14 -Wno-c++98-compat -Wno-c++11-compat-pedantic \
+CFLAGS=-c -Wall -MMD -MP -std=c++14 -Wno-c++98-compat -Wno-c++11-compat-pedantic \
  -Wno-float-equal -O3 -I ../googletest-release-1.8.0/googletest/include --system-header-prefix=gtest
 LDFLAGS=-L ../googletest-release-1.8.0/googletest/make -lpthread
 SOURCES=$(subst ,,$(wildcard *.cpp))
